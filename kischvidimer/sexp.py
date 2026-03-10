@@ -206,7 +206,20 @@ class SExp(Comparable):
         index = items[0].LITERAL_MAP.get(unique, unique)
         assert isinstance(index, int), "bad UNIQUE definition"
         nunique_values = len({item._sexp[index] for item in items})
-        assert nunique_values == len(items), f"duplicate {atm}[{unique}]"
+        if nunique_values != len(items):
+          # Ignore empty fields, otherwise use last
+          seen = {}
+          for item in items:
+            seen[item._sexp[index]] = item
+          duplicates = set(id(item) for item in items) - set(
+            id(item) for item in seen.values()
+          )
+          self._sexp = [
+            expression
+            for expression in self._sexp
+            if id(expression) not in duplicates
+          ]
+          self._subs[atm] = list(seen.values())
 
   def __getitem__(self, index_or_atom):
     if isinstance(index_or_atom, int):
