@@ -244,7 +244,7 @@ class Line(Repeatable):
 @sexp.handler("tbtext")
 class TBText(Repeatable):
   def is_pg(self):
-    return "${" in self[0]
+    return "${" in str(self[0])
 
   @sexp.uses("incrlabel", "rotate")
   def fillsvginst(self, svg, i, params, expandfunc):
