@@ -202,7 +202,7 @@ class KicadPro(Comparable):
       p.incr_max().set_text(f"Loading {wks_path}").write().incr()
     os.environ.update(config_env_vars())
     wks_path_expanded = os.path.expandvars(wks_path)
-    if any(c in wks_path_expanded for c in "$%~"):
+    if "://" in wks_path_expanded or any(c in wks_path_expanded for c in "$%~"):
       if p:
         p.clear()
       print(
