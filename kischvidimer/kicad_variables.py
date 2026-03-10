@@ -195,7 +195,9 @@ class Variables:
     vardict.setdefault(variable.upper(), value)
 
   def expand(self, context, text, hist=None):
-    text = Variables.RE_VAR.sub(lambda m: self.resolve(context, m, hist), text)
+    text = Variables.RE_VAR.sub(
+      lambda m: self.resolve(context, m, hist), str(text)
+    )
     text = Variables.RE_EXPR.sub(lambda m: self.evaluate(context, m[0]), text)
     return text
 
