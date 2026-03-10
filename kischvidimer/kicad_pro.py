@@ -98,7 +98,9 @@ class KicadPro(Comparable):
       for path, sheet in instances:
         pgcontext = context + (path, sheet)
         variables.define(
-          pgcontext, variables.PAGENO, int(path.get("page", [0])[0])
+          pgcontext,
+          variables.PAGENO,
+          int(page) if (page := path.get("page", ["0"])[0]).isdigit() else 0,
         )
         sch.fillvars(variables, diffs, context=pgcontext)
     if p:
