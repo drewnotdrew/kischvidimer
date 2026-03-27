@@ -142,7 +142,9 @@ def get_version(repo=None, githash=None):
   except FileNotFoundError:
     versionfile = None
   if versionfile:
-    glbls = {"__builtins__": {"object": object, "str": str}}
+    glbls = {
+      "__builtins__": {"object": object, "str": str, "__import__": __import__}
+    }
     try:
       exec(versionfile.read().decode(), glbls)
     except NameError as e:
