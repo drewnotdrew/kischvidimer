@@ -44,6 +44,8 @@ def getsize_mm(d):
         # FIXME(kicad#23575): tie this behavior to the document version
         dpcm_x = int.from_bytes(d[offset + 8 : offset + 12], "big") // 100
         dpcm_y = int.from_bytes(d[offset + 12 : offset + 16], "big") // 100
+        if any([dpcm_x, dpcm_y]) == 0:
+          break
         mm_per_x = 25.4 / round(dpcm_x * 2.54)
         mm_per_y = 25.4 / round(dpcm_y * 2.54)
     offset += hdrlen + 12
