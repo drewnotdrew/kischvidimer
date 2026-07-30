@@ -399,6 +399,14 @@ class MultiCoord(Coord):
     return abs(this_i - other_i)
 
 
+@sexp.handler("pts")
+class PointList(sexp.SExp):
+  """List of points; polygons may contain one per contour."""
+
+  UNIQUE = False
+  ORDERED = True
+
+
 class Drawable(ModifierRoot, sexp.SExp):
   UNIQUE = False
 
