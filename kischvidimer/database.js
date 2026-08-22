@@ -304,7 +304,9 @@ export function lookupNet(nameOrID, pageIndex, preferType) {
     if (pageIndex === undefined || pageIndex === CUR) {
       pageIndex = curPageIndex;
     }
-    for (const [netid, nodes] of Object.entries(index.nets.map[pageIndex])) {
+    for (const [netid, nodes] of Object.entries(
+      index.nets.map[pageIndex] || {},
+    )) {
       if (nodes.indexOf(nameOrID) !== -1) {
         elemid = netid;
         // if we don't have a preference, or we found our preference, stop

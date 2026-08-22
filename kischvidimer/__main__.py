@@ -48,4 +48,4 @@ if __name__ == "__main__":
   sys.stdout.flush()
   sys.stderr.flush()
   os.sync()
-  os._exit(ret)
+  os._exit(ret or 0)

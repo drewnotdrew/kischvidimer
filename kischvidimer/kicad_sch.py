@@ -1126,12 +1126,14 @@ class KicadSch(Drawable):  # ignore the uuid for the most part
 
   def fillsvg(self, svg, diffs, draw, context):
     if "title_block" not in self:
-      TitleBlock.new().fillsvg(svg, diffs, draw, context + (self,))
+      new_context = (context or ()) + (self,)
+      TitleBlock.new().fillsvg(svg, diffs, draw, new_context)
     super().fillsvg(svg, diffs, draw, context)
 
   def fillvars(self, variables, diffs, context=None):
     if "title_block" not in self:
-      TitleBlock.new().fillvars(variables, diffs, context + (self,))
+      new_context = (context or ()) + (self,)
+      TitleBlock.new().fillvars(variables, diffs, new_context)
     if self.is_root(context):
       variables.define(context, "FILENAME", os.path.basename(self._fname))
       variables.define(context, "FILEPATH", self._fname)
