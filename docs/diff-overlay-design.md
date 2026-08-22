@@ -152,8 +152,9 @@ Before any production code:
 ## Known risks
 
 - Normalization completeness (measured by the spike above)
-- Embedded HTML size: changed pages carry up to 2x geometry; unchanged
-  pages carry ~1x plus a second render's cost at build time
+- Embedded HTML size (diff outputs only; normal single-rev schgen HTML is
+  untouched by this feature): changed pages carry up to 2x geometry;
+  unchanged pages ~1x plus a second render's cost at build time
 - Fork divergence: upstream (Rivos) is not accepting external contributions
   yet; this lives in the fork until that changes
 
