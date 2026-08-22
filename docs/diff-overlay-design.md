@@ -92,45 +92,53 @@ animated originals.
 - Rejected as the primary mechanism; may still be the cheapest way to
   *prototype* the visuals before committing to B.
 
-## Presentation
+## Decisions (2026-08-21)
 
-- Colors via a small fixed class set (`.ovl-old`, `.ovl-new`), overriding
-  stroke/fill. Baseline palette per kiri convention: old = red, new = blue.
-  Whether unchanged content renders as normal theme colors (dimmed?) or is
-  forced to a neutral (kiri renders it white-on-black) is an open question —
-  the theme machinery (`themes.py`) can support either.
-- The overlay is a mode of the existing diff view, toggled from the toolbar
-  alongside the animation toolbox (overlay ⇄ animate are mutually
-  exclusive; the animation remains available for subtle-move verification).
-- Output stays the self-contained HTML that `diffui.py` already produces;
-  no new output format. A follow-on (out of scope here) could rasterize the
-  same overlay SVGs for paginated artifacts.
+- **Mechanism: dual full layers (A), operator-controlled.** Render the page
+  twice — an old-state layer and a new-state layer — with **four viewer
+  checkboxes**: old layer, new layer, old-layer tooltips, new-layer
+  tooltips. Tooltip clutter is handled by making it switchable, not by
+  suppressing information.
+- **Palette: kiri convention, pinned.** Black background, white unchanged,
+  red removed/old-only, blue added/new-only. Overlay mode ignores the
+  active kischvidimer theme (themes keep applying to the normal and
+  animated views); no attempt to blend the overlay palette with themes.
+- **Tooltips: both copies, labeled** old/new in their tooltip/inspector
+  chrome.
 
-## Interactivity in overlay mode (open)
+## The white-unchanged problem (open)
 
-Unchanged elements keep today's behavior. For changed pairs the open
-questions are how the two copies respond to hover/click:
+Pure dual-layer rendering colors *whole layers* red and blue; unchanged
+geometry exists in both layers and overlaps exactly. Making that overlap
+read as **white** (the kiri look) has two candidate solutions:
 
-1. both copies hoverable, tooltip annotated "old"/"new"; or
-2. hover/click targets only the new copy (old copy pointer-transparent),
-   with the inspector showing the full before/after property diff; or
-3. pairs act as one target: hovering either highlights both + shows the
-   property diff.
+1. **Blend emulation**: `mix-blend-mode: lighten` on the layers gives
+   red+blue = magenta, not white; kiri reaches white via a third
+   green-where-both-overlap pass driven by rasterized alpha masks.
+   Reproducing that with live vector layers means duplicating both layer
+   trees inside SVG `<mask>` elements — 4x geometry on sheets that are
+   already MB-scale. Faithful, but likely heavy.
+2. **Common-element split (recommended)**: render the two state layers as
+   in A, then partition by set-intersection of serialized elements:
+   present-in-both -> one white "unchanged" layer; old-only -> red layer;
+   new-only -> blue layer. Still render-twice (no Param/Svg surgery), adds
+   only a post-pass. Bonus: unchanged content exists once, so its tooltips
+   aren't duplicated. Implementation note: element serialization must be
+   normalized before comparison (uids/ids differ between the two render
+   passes) — this is the main piece of real work.
 
-(3) is the most useful and the most work; (2) is a clean default.
+Option 2 changes the checkbox story slightly (three layers: unchanged /
+removed / added — plus tooltip toggles; whether tooltips need a per-layer
+toggle for the unchanged layer is a taste call).
 
 ## Open questions (blocking)
 
-1. **Mechanism**: proceed with B (generator-side split)? Prototype via C
-   first to validate the visuals cheaply?
-2. **Unchanged-content styling**: normal theme colors, dimmed theme colors,
-   or kiri-style neutral white-on-dark?
-3. **Interactivity model** for changed pairs: option 1/2/3 above.
-4. **Scope**: viewer toggle only, or also a CLI flag that emits the HTML
-   with overlay as the default mode (for the schematic-hosting flow)?
-5. **Upstreamability**: keep the fork patch minimal in case this is worth
-   offering upstream (Rivos CLA pending), or optimize purely for the Teleo
-   fork?
+1. White-unchanged: blend emulation (1) or common-element split (2)?
+   Split changes "four checkboxes" into a 3-layer x 2 (or 3+2) matrix.
+2. Default state of the generated HTML: when CI publishes a diff page,
+   should it open already in overlay mode with these layers on, or open in
+   today's animated view with overlay opt-in via the toolbar? (This is all
+   the earlier "scope" question meant.)
 
 ## Non-goals
 
@@ -138,3 +146,4 @@ questions are how the two copies respond to hover/click:
 - Any change to diff computation, matching, or merge (`diff.py` untouched)
 - Three-way/merge-mode presentation (overlay is a two-state view; merge
   keeps the existing UI)
+- Theme-aware overlay palettes
