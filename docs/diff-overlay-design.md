@@ -5,7 +5,7 @@ SPDX-License-Identifier: Apache-2.0
 
 # Design: static overlay diff mode
 
-Status: **draft / open questions pending** · Branch: `drew/diff-overlay`
+Status: **design agreed (v2), pre-implementation review** · Branch: `drew/diff-overlay`
 
 ## Motivation
 
@@ -106,44 +106,60 @@ animated originals.
 - **Tooltips: both copies, labeled** old/new in their tooltip/inspector
   chrome.
 
-## The white-unchanged problem (open)
+## Sheet model (decided)
 
-Pure dual-layer rendering colors *whole layers* red and blue; unchanged
-geometry exists in both layers and overlaps exactly. Making that overlap
-read as **white** (the kiri look) has two candidate solutions:
+Three stacked SVG groups per page, produced by rendering the page at each
+rev and partitioning by element identity:
 
-1. **Blend emulation**: `mix-blend-mode: lighten` on the layers gives
-   red+blue = magenta, not white; kiri reaches white via a third
-   green-where-both-overlap pass driven by rasterized alpha masks.
-   Reproducing that with live vector layers means duplicating both layer
-   trees inside SVG `<mask>` elements — 4x geometry on sheets that are
-   already MB-scale. Faithful, but likely heavy.
-2. **Common-element split (recommended)**: render the two state layers as
-   in A, then partition by set-intersection of serialized elements:
-   present-in-both -> one white "unchanged" layer; old-only -> red layer;
-   new-only -> blue layer. Still render-twice (no Param/Svg surgery), adds
-   only a post-pass. Bonus: unchanged content exists once, so its tooltips
-   aren't duplicated. Implementation note: element serialization must be
-   normalized before comparison (uids/ids differ between the two render
-   passes) — this is the main piece of real work.
+- **unchanged** (white): elements byte-identical in both renders after
+  normalization, emitted once
+- **removed** (red): elements only the old rev renders
+- **added** (blue): elements only the new rev renders
 
-Option 2 changes the checkbox story slightly (three layers: unchanged /
-removed / added — plus tooltip toggles; whether tooltips need a per-layer
-toggle for the unchanged layer is a taste call).
+Viewer toolbar: show/hide and tooltip toggles per sheet. "Hide unchanged"
+doubles as a one-click delta-only view. Palette fixed (black background)
+regardless of active theme.
 
-## Open questions (blocking)
+Output: the one self-contained HTML kischvidimer already produces; overlay
+is the default mode on open, the animated view stays reachable from the
+toolbar.
 
-1. White-unchanged: blend emulation (1) or common-element split (2)?
-   Split changes "four checkboxes" into a 3-layer x 2 (or 3+2) matrix.
-2. Default state of the generated HTML: when CI publishes a diff page,
-   should it open already in overlay mode with these layers on, or open in
-   today's animated view with overlay opt-in via the toolbar? (This is all
-   the earlier "scope" question meant.)
+## Pre-implementation validation (next step, throwaway code only)
+
+The load-bearing assumption is that unchanged elements serialize
+identically across two independent renders once uids/ids are normalized.
+Before any production code:
+
+1. **Intersection measurement** on 2-3 real pages (dense kit sheet, a page
+   with a real historical diff, a page with a moved element): render both
+   revs, normalize, intersect; report matched fraction on known-unchanged
+   content. Anything meaningfully below 100% on an untouched sheet means
+   normalization needs more than uid-stripping, and the number tells us
+   where.
+2. **Static visual mock** built from that output: one non-interactive HTML
+   of a real diffed sheet in the three-sheet palette, for look/readability
+   sign-off before any viewer work.
+
+## Anticipated footprint (for review before code)
+
+- `diffui.py`: Page gains a second per-rev render + partition post-pass
+- one new module (partition/normalize logic)
+- `diffui.html` / `diffui.js` / `diffui.css`: sheet checkboxes, overlay
+  default, palette classes
+- untouched: `diff.py`, `svg.py` internals (render-twice uses the existing
+  single-state path), merge mode
+
+## Known risks
+
+- Normalization completeness (measured by the spike above)
+- Embedded HTML size: changed pages carry up to 2x geometry; unchanged
+  pages carry ~1x plus a second render's cost at build time
+- Fork divergence: upstream (Rivos) is not accepting external contributions
+  yet; this lives in the fork until that changes
 
 ## Non-goals
 
-- PDF/raster export (HTML output only, per current direction)
+- PDF/raster export (HTML output only)
 - Any change to diff computation, matching, or merge (`diff.py` untouched)
-- Three-way/merge-mode presentation (overlay is a two-state view; merge
-  keeps the existing UI)
+- Three-way/merge-mode presentation
 - Theme-aware overlay palettes
