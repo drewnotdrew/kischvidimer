@@ -124,21 +124,33 @@ Output: the one self-contained HTML kischvidimer already produces; overlay
 is the default mode on open, the animated view stays reachable from the
 toolbar.
 
-## Pre-implementation validation (next step, throwaway code only)
+## Validation results (spike, 2026-08-21)
 
-The load-bearing assumption is that unchanged elements serialize
-identically across two independent renders once uids/ids are normalized.
-Before any production code:
+Measured on real pages (throwaway tooling, not in-repo):
 
-1. **Intersection measurement** on 2-3 real pages (dense kit sheet, a page
-   with a real historical diff, a page with a moved element): render both
-   revs, normalize, intersect; report matched fraction on known-unchanged
-   content. Anything meaningfully below 100% on an untouched sheet means
-   normalization needs more than uid-stripping, and the number tells us
-   where.
-2. **Static visual mock** built from that output: one non-interactive HTML
-   of a real diffed sheet in the three-sheet palette, for look/readability
-   sign-off before any viewer work.
+- **Identical-content control: 100.000% matched** (775/775 elements,
+  byte-identical after normalization; reconfirmed across processes with
+  different hash seeds). Exactly two volatile token classes, both cleanly
+  normalizable: `t="..."` uids (memory addresses when uidtable is unset;
+  the production path uses a sequential uidtable) and `symbol:<hash>` def
+  ids from seed-randomized `SExp.hash()` (replace with a content hash).
+  No numeric-formatting instability.
+- **Real diff** (hydraulic_braking_tecu 78ec8fc8->230b044b): 741 matched /
+  34 removed / 14 added; every partition member spot-checks against the
+  actual "remove 12V" commit content.
+- **Moved element**: lands as exactly one removed + one added copy at the
+  two positions — the intended overlay semantics.
+- Perf: ~1.6 s/render for a dense sheet; intersection negligible.
+
+Adjustments the spike forces on the design:
+
+- **Recolor at render time, not via CSS**: colors are inline attributes and
+  `<use>` shadow trees are unreachable by document CSS. Each sheet renders
+  with a monochrome colormap (`Svg.colormap` already accepts one), so the
+  white/red/blue is baked per sheet and symbol defs are per-sheet.
+- Embedded raster images (data-URI photos) stay full-color; a tint filter
+  is possible later if wanted.
+- Stacking order: added above removed above unchanged.
 
 ## Anticipated footprint (for review before code)
 
