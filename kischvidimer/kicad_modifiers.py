@@ -80,7 +80,8 @@ class Effects(HasModifiers):
   @sexp.uses("hide")
   def fillsvgargs(self, args, diffs, context):
     super().fillsvgargs(args, diffs, context)
-    args["hidden"] = self.has_yes("hide", diffs, args.get("hidden"))
+    if self.get("hide") is not None:
+      args["hidden"] = self.has_yes("hide", diffs, args.get("hidden"))
 
 
 class Modifier(sexp.SExp):
