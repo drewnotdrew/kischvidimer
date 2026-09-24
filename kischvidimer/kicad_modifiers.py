@@ -215,6 +215,9 @@ class Type(Modifier):
         "background": "device_background",
         "color": None,  # value will get filled in by Color
       }
+    elif new_parent.type == "file":
+      # embedded_files tag each file, e.g. (type worksheet)
+      pass
     else:
       raise NotImplementedError(f"unexpected type parent {new_parent.type}")
 
