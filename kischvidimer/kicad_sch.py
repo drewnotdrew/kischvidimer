@@ -456,6 +456,11 @@ class RuleArea(HasUUID, Drawable):
   """A rule area; contains a polyline"""
 
 
+@sexp.handler("group")
+class Group(HasUUID, sexp.SExp):
+  """A group of items, such as a placed design block; not drawn"""
+
+
 @sexp.handler("netclass_flag")
 class NetclassFlag(HasUUID, Drawable):
   """A net directive label"""
